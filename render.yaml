@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: tal-redirector
+    runtime: python
+    region: oregon  # Change to your preferred region: oregon, ohio, frankfurt, singapore
+    plan: free      # Options: free, starter, standard, pro
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LOG_FORMAT
+        value: json
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    healthCheckPath: /health
+    autoDeploy: true

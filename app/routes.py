@@ -1,0 +1,230 @@
+"""
+API routes for the Tal Redirector service.
+"""
+
+from datetime import datetime, timezone
+from typing import Optional
+
+from fastapi import APIRouter, Query, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+
+from app import __version__
+from app.config import settings
+from app.logging_config import get_logger
+from app.templates import ERROR_PAGE_TEMPLATE, FALLBACK_PAGE_TEMPLATE
+from app.utils import (
+    build_wa_me_url,
+    get_device_type,
+    get_env_type,
+    get_webview_source,
+    is_android,
+    is_desktop,
+    is_ios,
+    is_risky_environment,
+    validate_phone,
+)
+
+logger = get_logger("routes")
+
+router = APIRouter()
+
+
+# =============================================================================
+# Health & Status Endpoints
+# =============================================================================
+
+
+@router.get("/", tags=["Health"])
+async def health_check():
+    """
+    Health check endpoint.
+
+    Returns service status and basic info.
+    """
+    return {
+        "status": "ok",
+        "service": settings.app_name,
+        "version": __version__,
+        "environment": settings.environment,
+    }
+
+
+@router.get("/health", tags=["Health"])
+async def detailed_health():
+    """
+    Detailed health check endpoint.
+
+    Returns comprehensive service health information.
+    """
+    return {
+        "status": "healthy",
+        "service": settings.app_name,
+        "version": __version__,
+        "environment": settings.environment,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "checks": {
+            "config_loaded": True,
+            "logging_enabled": settings.enable_request_logging,
+            "metrics_enabled": settings.enable_metrics,
+        },
+    }
+
+
+# =============================================================================
+# Main Redirect Endpoint
+# =============================================================================
+
+
+@router.get("/w", tags=["Redirect"])
+async def whatsapp_redirect(
+    request: Request,
+    phone: str = Query(
+        ...,
+        description="WhatsApp number in E.164 format without '+' (e.g., 9198XXXXXXXX)",
+        min_length=10,
+        max_length=15,
+    ),
+    text: Optional[str] = Query(
+        None,
+        description="Prefilled WhatsApp message",
+        max_length=1000,
+    ),
+    src: Optional[str] = Query(
+        None,
+        description="Traffic source (e.g., 'linkedin_ad', 'twitter', 'email')",
+        max_length=50,
+    ),
+    campaign: Optional[str] = Query(
+        None,
+        description="Campaign identifier",
+        max_length=100,
+    ),
+    ad_id: Optional[str] = Query(
+        None,
+        description="Ad identifier",
+        max_length=100,
+    ),
+    debug: int = Query(
+        0,
+        description="Set to 1 to force showing the fallback HTML page",
+        ge=0,
+        le=1,
+    ),
+):
+    """
+    Main WhatsApp redirect endpoint.
+
+    Intelligently redirects users to WhatsApp chat:
+    - Direct 302 redirect for safe environments (iOS, desktop, Android browser)
+    - Fallback HTML page for risky environments (Android webviews)
+
+    The fallback page includes:
+    - Auto-redirect attempt via JavaScript
+    - Manual "Open WhatsApp" button
+    - Instructions to open in browser
+    - Copyable link as last resort
+    """
+    # Get request context
+    request_id = getattr(request.state, "request_id", "unknown")
+    user_agent = request.headers.get("user-agent", "")
+    client_ip = request.client.host if request.client else None
+
+    # Validate phone number
+    is_valid, error_msg = validate_phone(phone)
+    if not is_valid:
+        logger.warning(
+            "Invalid phone number",
+            extra={
+                "request_id": request_id,
+                "phone": phone,
+                "error": error_msg,
+            },
+        )
+        html = ERROR_PAGE_TEMPLATE.format(
+            error_message="The phone number provided is invalid. Please check the link and try again.",
+            error_code="INVALID_PHONE",
+        )
+        return HTMLResponse(content=html, status_code=400)
+
+    # Build WhatsApp URL
+    wa_url = build_wa_me_url(phone, text)
+
+    # Environment detection
+    device_type = get_device_type(user_agent)
+    webview_source = get_webview_source(user_agent)
+    env_type = get_env_type(user_agent)
+    is_risky = is_risky_environment(user_agent)
+
+    # Log the redirect request
+    log_extra = {
+        "request_id": request_id,
+        "phone": phone[:4] + "****" + phone[-2:] if len(phone) > 6 else "****",  # Mask phone
+        "text": text[:50] if text else None,
+        "src": src,
+        "campaign": campaign,
+        "ad_id": ad_id,
+        "device_type": device_type,
+        "webview_source": webview_source,
+        "env_type": env_type,
+        "is_risky": is_risky,
+        "debug_mode": debug == 1,
+        "client_ip": client_ip,
+    }
+
+    logger.info("Redirect request received", extra=log_extra)
+
+    # Debug mode: always show fallback page
+    if debug == 1:
+        logger.info(
+            "Debug mode enabled - showing fallback page",
+            extra={"request_id": request_id},
+        )
+        html = FALLBACK_PAGE_TEMPLATE.format(wa_url=wa_url)
+        return HTMLResponse(content=html, status_code=200)
+
+    # Safe environment: direct redirect
+    if not is_risky:
+        logger.info(
+            "Safe environment - direct redirect",
+            extra={"request_id": request_id, "env_type": env_type},
+        )
+        return RedirectResponse(url=wa_url, status_code=302)
+
+    # Risky environment: show fallback page
+    logger.info(
+        "Risky environment - showing fallback page",
+        extra={"request_id": request_id, "env_type": env_type},
+    )
+    html = FALLBACK_PAGE_TEMPLATE.format(wa_url=wa_url)
+    return HTMLResponse(content=html, status_code=200)
+
+
+# =============================================================================
+# Debug/Test Endpoints (only in non-production)
+# =============================================================================
+
+
+@router.get("/debug/ua", tags=["Debug"])
+async def debug_user_agent(request: Request):
+    """
+    Debug endpoint to inspect User-Agent detection.
+
+    Only available in non-production environments.
+    """
+    if settings.environment == "production":
+        return {"error": "Not available in production"}
+
+    user_agent = request.headers.get("user-agent", "")
+
+    return {
+        "user_agent": user_agent,
+        "detection": {
+            "device_type": get_device_type(user_agent),
+            "is_android": is_android(user_agent),
+            "is_ios": is_ios(user_agent),
+            "is_desktop": is_desktop(user_agent),
+            "webview_source": get_webview_source(user_agent),
+            "env_type": get_env_type(user_agent),
+            "is_risky": is_risky_environment(user_agent),
+        },
+    }
