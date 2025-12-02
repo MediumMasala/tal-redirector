@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app import __version__
 from app.config import settings
 from app.logging_config import get_logger
-from app.templates import ERROR_PAGE_TEMPLATE, FALLBACK_PAGE_TEMPLATE, CHROME_INTENT_TEMPLATE, CHROME_OPEN_TEMPLATE
+from app.templates import ERROR_PAGE_TEMPLATE, FALLBACK_PAGE_TEMPLATE, CHROME_INTENT_TEMPLATE, CHROME_OPEN_TEMPLATE, AUTO_COPY_TEMPLATE
 from app.utils import (
     build_wa_me_url,
     get_device_type,
@@ -389,6 +389,64 @@ async def chrome_redirect(
         chrome_intent_url=chrome_intent_url,
         wa_url=wa_url,
     )
+    return HTMLResponse(content=html, status_code=200)
+
+
+# =============================================================================
+# Auto-Copy Route
+# =============================================================================
+
+
+@router.get("/a", tags=["Redirect"])
+async def auto_copy_redirect(
+    request: Request,
+    phone: str = Query(..., min_length=10, max_length=15),
+    text: Optional[str] = Query(None, max_length=1000),
+    src: Optional[str] = Query(None, max_length=50),
+    campaign: Optional[str] = Query(None, max_length=100),
+    ad_id: Optional[str] = Query(None, max_length=100),
+):
+    """
+    Auto-copy route for LinkedIn Android.
+
+    Automatically copies the WhatsApp link to clipboard on page load.
+    User just needs to open Chrome and paste.
+
+    On non-Android/non-webview, redirects directly to wa.me.
+    """
+    import re
+
+    user_agent = request.headers.get("user-agent", "")
+
+    # Validate phone
+    is_valid, error_msg = validate_phone(phone)
+    if not is_valid:
+        html = ERROR_PAGE_TEMPLATE.format(
+            error_message="Invalid phone number.",
+            error_code="INVALID_PHONE",
+        )
+        return HTMLResponse(content=html, status_code=400)
+
+    # Build URL
+    wa_url = build_wa_me_url(phone, text)
+
+    # Log
+    logger.info(
+        "Auto-copy request",
+        extra={
+            "phone": phone[:4] + "****" if len(phone) > 4 else "****",
+            "src": src,
+            "campaign": campaign,
+            "route": "/a",
+        },
+    )
+
+    # Safe environment: direct redirect
+    if not is_risky_environment(user_agent):
+        return RedirectResponse(url=wa_url, status_code=302)
+
+    # Risky environment: show auto-copy page
+    html = AUTO_COPY_TEMPLATE.format(wa_url=wa_url)
     return HTMLResponse(content=html, status_code=200)
 
 

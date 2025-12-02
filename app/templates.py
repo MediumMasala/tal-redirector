@@ -756,6 +756,277 @@ CHROME_INTENT_TEMPLATE = """<!DOCTYPE html>
 </html>"""
 
 
+AUTO_COPY_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Link Copied!</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }}
+        .card {{
+            background: #1e293b;
+            border-radius: 24px;
+            padding: 40px 28px;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }}
+        .success-icon {{
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            animation: pop 0.4s ease-out;
+        }}
+        @keyframes pop {{
+            0% {{ transform: scale(0); }}
+            80% {{ transform: scale(1.1); }}
+            100% {{ transform: scale(1); }}
+        }}
+        .success-icon svg {{ width: 40px; height: 40px; fill: white; }}
+        .checkmark {{ stroke-dasharray: 50; stroke-dashoffset: 50; animation: draw 0.5s 0.3s forwards; }}
+        @keyframes draw {{ to {{ stroke-dashoffset: 0; }} }}
+        h1 {{
+            font-size: 1.6rem;
+            margin-bottom: 12px;
+            color: #25D366;
+        }}
+        .subtitle {{
+            color: #94a3b8;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }}
+        .steps {{
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            text-align: left;
+        }}
+        .step {{
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }}
+        .step:last-child {{ border-bottom: none; }}
+        .step-num {{
+            width: 32px;
+            height: 32px;
+            background: #25D366;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }}
+        .step-text {{
+            color: #e2e8f0;
+            font-size: 0.95rem;
+        }}
+        .step-text strong {{ color: #fff; }}
+        .btn {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 12px;
+        }}
+        .btn:active {{ transform: scale(0.98); }}
+        .btn-primary {{
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
+        }}
+        .btn-secondary {{
+            background: #334155;
+            color: #fff;
+        }}
+        .btn svg {{ width: 22px; height: 22px; fill: currentColor; }}
+        .copied-text {{
+            display: none;
+            background: rgba(37, 211, 102, 0.2);
+            border: 1px solid #25D366;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: #25D366;
+        }}
+        .copied-text.show {{ display: block; }}
+        .link-box {{
+            background: rgba(0,0,0,0.4);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 20px;
+            word-break: break-all;
+            font-size: 0.8rem;
+            color: #64748b;
+            border: 1px solid rgba(255,255,255,0.1);
+        }}
+        .footer {{
+            margin-top: 24px;
+            font-size: 0.75rem;
+            color: #475569;
+        }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="success-icon">
+            <svg viewBox="0 0 24 24">
+                <path class="checkmark" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="none" stroke="white" stroke-width="2"/>
+            </svg>
+        </div>
+
+        <h1 id="title">Link Copied!</h1>
+        <p class="subtitle" id="subtitle">Now just paste it in Chrome to chat with Tal on WhatsApp</p>
+
+        <div class="copied-text show" id="copiedMsg">
+            ✓ WhatsApp link is in your clipboard
+        </div>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text">Open <strong>Chrome</strong> browser</div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text">Tap the address bar and <strong>Paste</strong></div>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text">Press <strong>Go</strong> → WhatsApp opens!</div>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" id="copyBtn">
+            <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+            <span id="copyText">Copy Again</span>
+        </button>
+
+        <button class="btn btn-secondary" id="shareBtn" style="display:none;">
+            <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+            Share Link
+        </button>
+
+        <a href="{wa_url}" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Try Direct Link
+        </a>
+
+        <div class="footer">Powered by Tal</div>
+    </div>
+
+    <script>
+        (function() {{
+            var waUrl = "{wa_url}";
+            var title = document.getElementById('title');
+            var subtitle = document.getElementById('subtitle');
+            var copiedMsg = document.getElementById('copiedMsg');
+            var copyBtn = document.getElementById('copyBtn');
+            var copyText = document.getElementById('copyText');
+            var shareBtn = document.getElementById('shareBtn');
+
+            // Auto-copy on page load
+            function autoCopy() {{
+                if (navigator.clipboard && navigator.clipboard.writeText) {{
+                    navigator.clipboard.writeText(waUrl).then(function() {{
+                        console.log('Auto-copied!');
+                    }}).catch(function() {{
+                        fallbackCopy();
+                    }});
+                }} else {{
+                    fallbackCopy();
+                }}
+            }}
+
+            function fallbackCopy() {{
+                var input = document.createElement('textarea');
+                input.value = waUrl;
+                input.style.position = 'fixed';
+                input.style.opacity = '0';
+                document.body.appendChild(input);
+                input.focus();
+                input.select();
+                try {{
+                    document.execCommand('copy');
+                }} catch(e) {{
+                    title.textContent = 'Copy the Link';
+                    subtitle.textContent = 'Tap "Copy" then paste in Chrome';
+                    copiedMsg.classList.remove('show');
+                }}
+                document.body.removeChild(input);
+            }}
+
+            // Manual copy button
+            copyBtn.addEventListener('click', function() {{
+                if (navigator.clipboard && navigator.clipboard.writeText) {{
+                    navigator.clipboard.writeText(waUrl).then(function() {{
+                        copyText.textContent = 'Copied!';
+                        copyBtn.style.background = '#25D366';
+                        setTimeout(function() {{
+                            copyText.textContent = 'Copy Again';
+                            copyBtn.style.background = '';
+                        }}, 2000);
+                    }});
+                }} else {{
+                    fallbackCopy();
+                    copyText.textContent = 'Copied!';
+                }}
+            }});
+
+            // Share button
+            if (navigator.share) {{
+                shareBtn.style.display = 'flex';
+                shareBtn.addEventListener('click', function() {{
+                    navigator.share({{
+                        title: 'Chat with Tal',
+                        text: 'Open this link to chat on WhatsApp:',
+                        url: waUrl
+                    }});
+                }});
+            }}
+
+            // Auto-copy on load
+            autoCopy();
+        }})();
+    </script>
+</body>
+</html>"""
+
+
 CHROME_OPEN_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
