@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app import __version__
 from app.config import settings
 from app.logging_config import get_logger
-from app.templates import ERROR_PAGE_TEMPLATE, FALLBACK_PAGE_TEMPLATE
+from app.templates import ERROR_PAGE_TEMPLATE, FALLBACK_PAGE_TEMPLATE, CHROME_INTENT_TEMPLATE
 from app.utils import (
     build_wa_me_url,
     get_device_type,
@@ -204,6 +204,120 @@ async def whatsapp_redirect(
         extra={"request_id": request_id, "env_type": env_type},
     )
     html = FALLBACK_PAGE_TEMPLATE.format(
+        wa_url=wa_url,
+        phone=clean_phone,
+        text=text or "",
+    )
+    return HTMLResponse(content=html, status_code=200)
+
+
+# =============================================================================
+# Chrome Intent Route (for Android webviews)
+# =============================================================================
+
+
+@router.get("/wc", tags=["Redirect"])
+async def whatsapp_chrome_redirect(
+    request: Request,
+    phone: str = Query(
+        ...,
+        description="WhatsApp number in E.164 format without '+' (e.g., 9198XXXXXXXX)",
+        min_length=10,
+        max_length=15,
+    ),
+    text: Optional[str] = Query(
+        None,
+        description="Prefilled WhatsApp message",
+        max_length=1000,
+    ),
+    src: Optional[str] = Query(
+        None,
+        description="Traffic source (e.g., 'linkedin_ad', 'twitter', 'email')",
+        max_length=50,
+    ),
+    campaign: Optional[str] = Query(
+        None,
+        description="Campaign identifier",
+        max_length=100,
+    ),
+    ad_id: Optional[str] = Query(
+        None,
+        description="Ad identifier",
+        max_length=100,
+    ),
+):
+    """
+    WhatsApp redirect using Chrome intent for Android.
+
+    This route attempts to open Chrome browser on Android devices,
+    which can then properly handle WhatsApp links even from webviews
+    like LinkedIn's in-app browser.
+
+    On non-Android devices, redirects directly to wa.me.
+    """
+    import re
+
+    # Get request context
+    request_id = getattr(request.state, "request_id", "unknown")
+    user_agent = request.headers.get("user-agent", "")
+    client_ip = request.client.host if request.client else None
+
+    # Validate phone number
+    is_valid, error_msg = validate_phone(phone)
+    if not is_valid:
+        logger.warning(
+            "Invalid phone number",
+            extra={
+                "request_id": request_id,
+                "phone": phone,
+                "error": error_msg,
+            },
+        )
+        html = ERROR_PAGE_TEMPLATE.format(
+            error_message="The phone number provided is invalid. Please check the link and try again.",
+            error_code="INVALID_PHONE",
+        )
+        return HTMLResponse(content=html, status_code=400)
+
+    # Build WhatsApp URL
+    wa_url = build_wa_me_url(phone, text)
+    clean_phone = re.sub(r"\D", "", phone)
+
+    # Environment detection
+    device_type = get_device_type(user_agent)
+    env_type = get_env_type(user_agent)
+
+    # Log the redirect request
+    logger.info(
+        "Chrome intent redirect request",
+        extra={
+            "request_id": request_id,
+            "phone": phone[:4] + "****" + phone[-2:] if len(phone) > 6 else "****",
+            "text": text[:50] if text else None,
+            "src": src,
+            "campaign": campaign,
+            "ad_id": ad_id,
+            "device_type": device_type,
+            "env_type": env_type,
+            "client_ip": client_ip,
+            "route": "/wc",
+        },
+    )
+
+    # For non-Android, just redirect to wa.me
+    if not is_android(user_agent):
+        logger.info(
+            "Non-Android device - direct redirect",
+            extra={"request_id": request_id, "device_type": device_type},
+        )
+        return RedirectResponse(url=wa_url, status_code=302)
+
+    # For Android, show Chrome intent page
+    logger.info(
+        "Android device - showing Chrome intent page",
+        extra={"request_id": request_id, "env_type": env_type},
+    )
+    html = CHROME_INTENT_TEMPLATE.format(
         wa_url=wa_url,
         phone=clean_phone,
         text=text or "",
