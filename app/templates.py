@@ -323,25 +323,72 @@ FALLBACK_PAGE_TEMPLATE = """<!DOCTYPE html>
         (function() {{
             'use strict';
 
+            // URLs for different methods
             var waUrl = "{wa_url}";
+            var phone = "{phone}";
+            var text = "{text}";
+
+            // Detect Android
+            var isAndroid = /android/i.test(navigator.userAgent);
+
+            // Build different URL formats for Android
+            var intentUrl = "intent://send?phone=" + phone + (text ? "&text=" + encodeURIComponent(text) : "") + "#Intent;scheme=whatsapp;package=com.whatsapp;end";
+            var whatsappSchemeUrl = "whatsapp://send?phone=" + phone + (text ? "&text=" + encodeURIComponent(text) : "");
+            var apiUrl = "https://api.whatsapp.com/send?phone=" + phone + (text ? "&text=" + encodeURIComponent(text) : "");
+
             var loading = document.getElementById('loading');
+            var openBtn = document.getElementById('openBtn');
             var copyBtn = document.getElementById('copyBtn');
             var copyInput = document.getElementById('copyInput');
             var copySuccess = document.getElementById('copySuccess');
 
-            // Auto-attempt to open WhatsApp on load
-            function attemptRedirect() {{
+            // Try multiple methods to open WhatsApp
+            function openWhatsApp(e) {{
+                if (e) e.preventDefault();
+
                 loading.classList.add('show');
-                try {{
+
+                if (isAndroid) {{
+                    // On Android, try multiple methods in sequence
+                    tryAndroidMethods();
+                }} else {{
+                    // On iOS/Desktop, wa.me works fine
                     window.location.href = waUrl;
-                }} catch (e) {{
-                    console.log('[Tal] Auto-redirect failed:', e);
                 }}
 
-                // Hide loading after delay
                 setTimeout(function() {{
                     loading.classList.remove('show');
                 }}, 3000);
+            }}
+
+            function tryAndroidMethods() {{
+                // Method 1: Try intent:// URL (works best in webviews)
+                var iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = intentUrl;
+                document.body.appendChild(iframe);
+
+                // Method 2: After a short delay, try whatsapp:// scheme
+                setTimeout(function() {{
+                    window.location.href = whatsappSchemeUrl;
+                }}, 100);
+
+                // Method 3: After another delay, try api.whatsapp.com
+                setTimeout(function() {{
+                    window.location.href = apiUrl;
+                }}, 300);
+
+                // Method 4: Last resort, try wa.me
+                setTimeout(function() {{
+                    window.location.href = waUrl;
+                }}, 500);
+
+                // Clean up iframe
+                setTimeout(function() {{
+                    if (iframe.parentNode) {{
+                        iframe.parentNode.removeChild(iframe);
+                    }}
+                }}, 2000);
             }}
 
             // Copy functionality
@@ -384,17 +431,24 @@ FALLBACK_PAGE_TEMPLATE = """<!DOCTYPE html>
                 }}, 4000);
             }}
 
+            // Update button href for Android
+            if (isAndroid) {{
+                // Use api.whatsapp.com for button (more reliable than wa.me in webviews)
+                openBtn.href = apiUrl;
+            }}
+
             // Event listeners
             document.addEventListener('DOMContentLoaded', function() {{
-                attemptRedirect();
+                // Auto-attempt on load
+                openWhatsApp(null);
             }});
 
+            openBtn.addEventListener('click', openWhatsApp);
             copyBtn.addEventListener('click', copyToClipboard);
 
             // Also try on visibility change (when user returns to tab)
             document.addEventListener('visibilitychange', function() {{
                 if (document.visibilityState === 'visible') {{
-                    // User came back, they might need to try again
                     loading.classList.remove('show');
                 }}
             }});

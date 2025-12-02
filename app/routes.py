@@ -173,13 +173,21 @@ async def whatsapp_redirect(
 
     logger.info("Redirect request received", extra=log_extra)
 
+    # Clean phone number for template
+    import re
+    clean_phone = re.sub(r"\D", "", phone)
+
     # Debug mode: always show fallback page
     if debug == 1:
         logger.info(
             "Debug mode enabled - showing fallback page",
             extra={"request_id": request_id},
         )
-        html = FALLBACK_PAGE_TEMPLATE.format(wa_url=wa_url)
+        html = FALLBACK_PAGE_TEMPLATE.format(
+            wa_url=wa_url,
+            phone=clean_phone,
+            text=text or "",
+        )
         return HTMLResponse(content=html, status_code=200)
 
     # Safe environment: direct redirect
@@ -195,7 +203,11 @@ async def whatsapp_redirect(
         "Risky environment - showing fallback page",
         extra={"request_id": request_id, "env_type": env_type},
     )
-    html = FALLBACK_PAGE_TEMPLATE.format(wa_url=wa_url)
+    html = FALLBACK_PAGE_TEMPLATE.format(
+        wa_url=wa_url,
+        phone=clean_phone,
+        text=text or "",
+    )
     return HTMLResponse(content=html, status_code=200)
 
 
