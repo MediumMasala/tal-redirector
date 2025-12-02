@@ -756,6 +756,146 @@ CHROME_INTENT_TEMPLATE = """<!DOCTYPE html>
 </html>"""
 
 
+ULTIMATE_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chat with Tal</title>
+    <style>
+        *{{margin:0;padding:0;box-sizing:border-box}}
+        body{{font-family:-apple-system,sans-serif;background:#0f172a;color:#fff;min-height:100vh;padding:20px;display:flex;align-items:center;justify-content:center}}
+        .card{{background:#1e293b;border-radius:20px;padding:28px 24px;max-width:380px;width:100%;text-align:center}}
+        .logo{{width:60px;height:60px;background:#25D366;border-radius:14px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center}}
+        .logo svg{{width:34px;height:34px;fill:#fff}}
+        h1{{font-size:1.4rem;margin-bottom:8px}}
+        .sub{{color:#94a3b8;font-size:0.9rem;margin-bottom:24px}}
+        .status{{background:rgba(37,211,102,0.15);border:1px solid #25D366;border-radius:10px;padding:12px;margin-bottom:20px;font-size:0.85rem;color:#25D366}}
+        .btn{{display:block;width:100%;padding:16px;font-size:1rem;font-weight:600;border:none;border-radius:12px;cursor:pointer;text-decoration:none;margin-bottom:10px;color:#fff}}
+        .btn-green{{background:linear-gradient(135deg,#25D366,#128C7E)}}
+        .btn-gray{{background:#334155;font-size:0.9rem}}
+        .qr-section{{margin:24px 0;padding:20px;background:rgba(255,255,255,0.05);border-radius:12px}}
+        .qr-section p{{color:#94a3b8;font-size:0.8rem;margin-bottom:12px}}
+        .qr-code{{background:#fff;padding:12px;border-radius:8px;display:inline-block}}
+        .qr-code img{{display:block}}
+        .steps{{background:rgba(0,0,0,0.3);border-radius:12px;padding:16px;margin:20px 0;text-align:left}}
+        .steps p{{color:#64748b;font-size:0.75rem;margin-bottom:10px}}
+        .steps ol{{color:#94a3b8;font-size:0.8rem;padding-left:20px;line-height:1.8}}
+        .steps strong{{color:#fff}}
+        .divider{{color:#475569;font-size:0.7rem;margin:20px 0}}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">
+            <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        </div>
+
+        <h1>Chat with Tal</h1>
+        <p class="sub">on WhatsApp</p>
+
+        <div class="status" id="status">Trying to open WhatsApp...</div>
+
+        <a href="{wa_url}" class="btn btn-green" id="waBtn">Open WhatsApp</a>
+
+        <button class="btn btn-gray" id="copyBtn">📋 Copy Link</button>
+
+        <button class="btn btn-gray" id="shareBtn" style="display:none;">📤 Share Link</button>
+
+        <div class="steps">
+            <p>If WhatsApp doesn't open:</p>
+            <ol>
+                <li>Tap <strong>⋮</strong> menu (top-right)</li>
+                <li>Select <strong>"Open in browser"</strong></li>
+                <li>Or copy link → open Chrome → paste</li>
+            </ol>
+        </div>
+
+        <div class="divider">— or scan QR code —</div>
+
+        <div class="qr-section">
+            <p>Scan with your camera app:</p>
+            <div class="qr-code">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data={wa_url_encoded}" width="140" height="140" alt="QR Code">
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function(){{
+        var waUrl = "{wa_url}";
+        var status = document.getElementById('status');
+        var copyBtn = document.getElementById('copyBtn');
+        var shareBtn = document.getElementById('shareBtn');
+
+        // Try everything
+        function tryAll() {{
+            // 1. Auto-copy to clipboard
+            if(navigator.clipboard){{
+                navigator.clipboard.writeText(waUrl).then(function(){{
+                    status.textContent = '✓ Link copied! Paste in Chrome';
+                }}).catch(function(){{}});
+            }}
+
+            // 2. Try WhatsApp URL schemes
+            var schemes = [
+                'intent://send?phone={phone}&text={text_encoded}#Intent;scheme=whatsapp;package=com.whatsapp;end',
+                'whatsapp://send?phone={phone}&text={text_encoded}',
+                'https://api.whatsapp.com/send?phone={phone}&text={text_encoded}',
+                waUrl
+            ];
+
+            schemes.forEach(function(url, i){{
+                setTimeout(function(){{
+                    try{{
+                        if(i < 2){{
+                            var iframe = document.createElement('iframe');
+                            iframe.style.display = 'none';
+                            iframe.src = url;
+                            document.body.appendChild(iframe);
+                        }} else {{
+                            window.location.href = url;
+                        }}
+                    }}catch(e){{}}
+                }}, i * 150);
+            }});
+
+            // Update status after attempts
+            setTimeout(function(){{
+                status.innerHTML = '✓ Link copied to clipboard<br><small>Open Chrome and paste to continue</small>';
+            }}, 1000);
+        }}
+
+        // Copy button
+        copyBtn.onclick = function(){{
+            if(navigator.clipboard){{
+                navigator.clipboard.writeText(waUrl).then(function(){{
+                    copyBtn.textContent = '✓ Copied!';
+                    copyBtn.style.background = '#25D366';
+                    setTimeout(function(){{
+                        copyBtn.textContent = '📋 Copy Link';
+                        copyBtn.style.background = '';
+                    }}, 2000);
+                }});
+            }}
+        }};
+
+        // Share button
+        if(navigator.share){{
+            shareBtn.style.display = 'block';
+            shareBtn.onclick = function(){{
+                navigator.share({{title:'Chat with Tal',url:waUrl}});
+            }};
+        }}
+
+        // Run on load
+        tryAll();
+    }})();
+    </script>
+</body>
+</html>"""
+
+
 AUTO_COPY_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>

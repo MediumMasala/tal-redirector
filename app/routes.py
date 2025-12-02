@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app import __version__
 from app.config import settings
 from app.logging_config import get_logger
-from app.templates import ERROR_PAGE_TEMPLATE, FALLBACK_PAGE_TEMPLATE, CHROME_INTENT_TEMPLATE, CHROME_OPEN_TEMPLATE, AUTO_COPY_TEMPLATE
+from app.templates import ERROR_PAGE_TEMPLATE, FALLBACK_PAGE_TEMPLATE, CHROME_INTENT_TEMPLATE, CHROME_OPEN_TEMPLATE, AUTO_COPY_TEMPLATE, ULTIMATE_TEMPLATE
 from app.utils import (
     build_wa_me_url,
     get_device_type,
@@ -447,6 +447,67 @@ async def auto_copy_redirect(
 
     # Risky environment: show auto-copy page
     html = AUTO_COPY_TEMPLATE.format(wa_url=wa_url)
+    return HTMLResponse(content=html, status_code=200)
+
+
+# =============================================================================
+# Ultimate Route - Everything + QR Code
+# =============================================================================
+
+
+@router.get("/u", tags=["Redirect"])
+async def ultimate_redirect(
+    request: Request,
+    phone: str = Query(..., min_length=10, max_length=15),
+    text: Optional[str] = Query(None, max_length=1000),
+    src: Optional[str] = Query(None, max_length=50),
+    campaign: Optional[str] = Query(None, max_length=100),
+    ad_id: Optional[str] = Query(None, max_length=100),
+):
+    """
+    Ultimate route - tries everything + shows QR code.
+
+    - Auto-copies link to clipboard
+    - Tries all WhatsApp URL schemes
+    - Shows QR code for camera scan
+    - Copy and Share buttons
+    - Clear instructions
+
+    On safe environments, redirects directly.
+    """
+    import re
+    from urllib.parse import quote
+
+    user_agent = request.headers.get("user-agent", "")
+
+    # Validate
+    is_valid, _ = validate_phone(phone)
+    if not is_valid:
+        return HTMLResponse(
+            ERROR_PAGE_TEMPLATE.format(error_message="Invalid phone", error_code="INVALID"),
+            status_code=400
+        )
+
+    # Build URLs
+    clean_phone = re.sub(r"\D", "", phone)
+    wa_url = build_wa_me_url(phone, text)
+    wa_url_encoded = quote(wa_url, safe='')
+    text_encoded = quote(text or '', safe='')
+
+    # Log
+    logger.info("Ultimate redirect", extra={"phone": clean_phone[:4] + "****", "src": src, "route": "/u"})
+
+    # Safe: direct redirect
+    if not is_risky_environment(user_agent):
+        return RedirectResponse(url=wa_url, status_code=302)
+
+    # Risky: show ultimate page
+    html = ULTIMATE_TEMPLATE.format(
+        wa_url=wa_url,
+        wa_url_encoded=wa_url_encoded,
+        phone=clean_phone,
+        text_encoded=text_encoded,
+    )
     return HTMLResponse(content=html, status_code=200)
 
 
