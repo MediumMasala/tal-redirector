@@ -756,6 +756,91 @@ CHROME_INTENT_TEMPLATE = """<!DOCTYPE html>
 </html>"""
 
 
+CHROME_OPEN_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="0;url={chrome_intent_url}">
+    <title>Opening Chrome...</title>
+    <style>
+        body {{
+            font-family: -apple-system, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }}
+        .container {{ max-width: 350px; }}
+        h1 {{ font-size: 1.3rem; margin-bottom: 16px; }}
+        p {{ color: #9ca3af; font-size: 0.9rem; margin-bottom: 24px; }}
+        .spinner {{
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(37,211,102,0.2);
+            border-top-color: #25D366;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }}
+        @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+        a {{
+            display: block;
+            padding: 16px;
+            background: #25D366;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }}
+        .secondary {{
+            background: #374151;
+            font-size: 0.9rem;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h1>Opening Chrome...</h1>
+        <p>Chrome will open WhatsApp for you.</p>
+
+        <a href="{chrome_intent_url}" id="chromeBtn">Open in Chrome</a>
+        <a href="{wa_url}" class="secondary">Direct WhatsApp Link</a>
+    </div>
+
+    <script>
+        (function() {{
+            var chromeIntent = "{chrome_intent_url}";
+            var waUrl = "{wa_url}";
+
+            // Immediately try to open Chrome
+            window.location.href = chromeIntent;
+
+            // Fallback: try again after short delay
+            setTimeout(function() {{
+                window.location.href = chromeIntent;
+            }}, 100);
+
+            // If still here after 2 seconds, try iframe method
+            setTimeout(function() {{
+                var iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = chromeIntent;
+                document.body.appendChild(iframe);
+            }}, 500);
+        }})();
+    </script>
+</body>
+</html>"""
+
+
 ERROR_PAGE_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
