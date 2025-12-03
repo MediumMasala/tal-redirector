@@ -1252,6 +1252,331 @@ CHROME_OPEN_TEMPLATE = """<!DOCTYPE html>
 </html>"""
 
 
+LINKEDIN_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Open in Chrome</title>
+    <style>
+        *{{margin:0;padding:0;box-sizing:border-box}}
+        body{{
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+            background:linear-gradient(180deg,#0077B5 0%,#004471 100%);
+            color:#fff;
+            min-height:100vh;
+            padding:20px;
+        }}
+        .container{{max-width:400px;margin:0 auto}}
+
+        /* Hero section */
+        .hero{{
+            background:#fff;
+            border-radius:24px;
+            padding:32px 24px;
+            text-align:center;
+            box-shadow:0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom:20px;
+        }}
+        .hero-icon{{
+            width:72px;
+            height:72px;
+            background:#0077B5;
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            margin:0 auto 20px;
+        }}
+        .hero-icon svg{{width:36px;height:36px;fill:#fff}}
+        .hero h1{{
+            color:#1a1a1a;
+            font-size:1.4rem;
+            margin-bottom:8px;
+        }}
+        .hero p{{
+            color:#666;
+            font-size:0.95rem;
+            margin-bottom:24px;
+        }}
+
+        /* Steps */
+        .steps{{
+            background:#f8f9fa;
+            border-radius:16px;
+            padding:20px;
+            text-align:left;
+        }}
+        .step{{
+            display:flex;
+            align-items:flex-start;
+            gap:16px;
+            padding:16px 0;
+            border-bottom:1px solid #e5e7eb;
+        }}
+        .step:last-child{{border-bottom:none}}
+        .step-num{{
+            width:36px;
+            height:36px;
+            background:#0077B5;
+            color:#fff;
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:700;
+            font-size:1rem;
+            flex-shrink:0;
+        }}
+        .step-content{{flex:1}}
+        .step-title{{
+            color:#1a1a1a;
+            font-weight:600;
+            font-size:1rem;
+            margin-bottom:4px;
+        }}
+        .step-desc{{
+            color:#666;
+            font-size:0.85rem;
+            line-height:1.4;
+        }}
+        .step-highlight{{
+            display:inline-flex;
+            align-items:center;
+            gap:6px;
+            background:#0077B5;
+            color:#fff;
+            padding:4px 10px;
+            border-radius:6px;
+            font-weight:600;
+            font-size:0.85rem;
+        }}
+        .menu-dots{{
+            font-size:1.2rem;
+            font-weight:bold;
+            background:#333;
+            color:#fff;
+            padding:2px 8px;
+            border-radius:4px;
+        }}
+
+        /* Arrow animation */
+        .arrow-hint{{
+            position:fixed;
+            top:12px;
+            right:12px;
+            background:#FFD700;
+            color:#1a1a1a;
+            padding:10px 14px;
+            border-radius:12px;
+            font-weight:600;
+            font-size:0.85rem;
+            animation:pulse 2s infinite;
+            z-index:100;
+            box-shadow:0 4px 20px rgba(0,0,0,0.3);
+        }}
+        .arrow-hint::after{{
+            content:'↗';
+            margin-left:6px;
+            font-size:1.1rem;
+        }}
+        @keyframes pulse{{
+            0%,100%{{transform:scale(1);opacity:1}}
+            50%{{transform:scale(1.05);opacity:0.9}}
+        }}
+
+        /* Copy section */
+        .copy-section{{
+            background:rgba(255,255,255,0.15);
+            backdrop-filter:blur(10px);
+            border-radius:16px;
+            padding:20px;
+            text-align:center;
+        }}
+        .copy-section p{{
+            font-size:0.9rem;
+            margin-bottom:16px;
+            opacity:0.9;
+        }}
+        .btn{{
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:10px;
+            width:100%;
+            padding:16px;
+            font-size:1rem;
+            font-weight:600;
+            border:none;
+            border-radius:12px;
+            cursor:pointer;
+            text-decoration:none;
+            margin-bottom:10px;
+            color:#fff;
+            transition:transform 0.2s;
+        }}
+        .btn:active{{transform:scale(0.98)}}
+        .btn-white{{background:#fff;color:#0077B5}}
+        .btn-green{{background:#25D366}}
+        .btn-outline{{background:transparent;border:2px solid rgba(255,255,255,0.5)}}
+        .btn svg{{width:20px;height:20px;fill:currentColor}}
+
+        /* Status */
+        .status{{
+            background:rgba(37,211,102,0.2);
+            border:1px solid #25D366;
+            border-radius:10px;
+            padding:12px;
+            font-size:0.9rem;
+            color:#25D366;
+            margin-bottom:16px;
+            text-align:center;
+        }}
+
+        .footer{{
+            text-align:center;
+            margin-top:24px;
+            font-size:0.75rem;
+            opacity:0.7;
+        }}
+    </style>
+</head>
+<body>
+    <div class="arrow-hint">Tap menu here</div>
+
+    <div class="container">
+        <div class="hero">
+            <div class="hero-icon">
+                <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+            </div>
+            <h1>Open in Chrome to Continue</h1>
+            <p>LinkedIn's browser can't open WhatsApp directly. Follow these quick steps:</p>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Tap the menu <span class="menu-dots">⋮</span></div>
+                        <div class="step-desc">Look for 3 dots in the top-right corner</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Select <span class="step-highlight">Open in browser</span></div>
+                        <div class="step-desc">This opens Chrome (or your default browser)</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">WhatsApp opens automatically!</div>
+                        <div class="step-desc">You'll be chatting with Tal in seconds</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="copy-section">
+            <div class="status" id="status">✓ Link copied to clipboard</div>
+            <p>Alternative: Paste this link in Chrome</p>
+
+            <button class="btn btn-white" id="copyBtn">
+                <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                <span id="copyText">Copy Link Again</span>
+            </button>
+
+            <button class="btn btn-outline" id="shareBtn" style="display:none;">
+                <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+                Share to Chrome
+            </button>
+
+            <a href="{wa_url}" class="btn btn-green">
+                <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                Try WhatsApp Anyway
+            </a>
+        </div>
+
+        <div class="footer">
+            Chat with Tal on WhatsApp • Powered by Tal
+        </div>
+    </div>
+
+    <script>
+    (function(){{
+        var waUrl = "{wa_url}";
+        var status = document.getElementById('status');
+        var copyBtn = document.getElementById('copyBtn');
+        var copyText = document.getElementById('copyText');
+        var shareBtn = document.getElementById('shareBtn');
+
+        // Auto-copy on load
+        function autoCopy() {{
+            if (navigator.clipboard && navigator.clipboard.writeText) {{
+                navigator.clipboard.writeText(waUrl).then(function() {{
+                    status.textContent = '✓ Link copied to clipboard';
+                    status.style.display = 'block';
+                }}).catch(function() {{
+                    status.style.display = 'none';
+                }});
+            }} else {{
+                // Fallback
+                var input = document.createElement('textarea');
+                input.value = waUrl;
+                input.style.cssText = 'position:fixed;opacity:0';
+                document.body.appendChild(input);
+                input.select();
+                try {{
+                    document.execCommand('copy');
+                    status.textContent = '✓ Link copied to clipboard';
+                }} catch(e) {{
+                    status.style.display = 'none';
+                }}
+                document.body.removeChild(input);
+            }}
+        }}
+
+        // Copy button
+        copyBtn.onclick = function() {{
+            if (navigator.clipboard) {{
+                navigator.clipboard.writeText(waUrl).then(function() {{
+                    copyText.textContent = 'Copied!';
+                    copyBtn.style.background = '#25D366';
+                    copyBtn.style.color = '#fff';
+                    setTimeout(function() {{
+                        copyText.textContent = 'Copy Link Again';
+                        copyBtn.style.background = '#fff';
+                        copyBtn.style.color = '#0077B5';
+                    }}, 2000);
+                }});
+            }}
+        }};
+
+        // Share button (share to Chrome specifically)
+        if (navigator.share) {{
+            shareBtn.style.display = 'flex';
+            shareBtn.onclick = function() {{
+                navigator.share({{
+                    title: 'Chat with Tal on WhatsApp',
+                    text: 'Open this link in Chrome:',
+                    url: waUrl
+                }});
+            }};
+        }}
+
+        // Run auto-copy
+        autoCopy();
+
+        // Hide arrow after 5 seconds
+        setTimeout(function() {{
+            document.querySelector('.arrow-hint').style.opacity = '0.5';
+        }}, 5000);
+    }})();
+    </script>
+</body>
+</html>"""
+
+
 ERROR_PAGE_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
