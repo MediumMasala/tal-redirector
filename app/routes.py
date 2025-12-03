@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app import __version__
 from app.config import settings
 from app.logging_config import get_logger
-from app.templates import ERROR_PAGE_TEMPLATE, FALLBACK_PAGE_TEMPLATE, CHROME_INTENT_TEMPLATE, CHROME_OPEN_TEMPLATE, AUTO_COPY_TEMPLATE, ULTIMATE_TEMPLATE, LINKEDIN_TEMPLATE, CHROME_ESCAPE_TEMPLATE, META_REFRESH_TEMPLATE
+from app.templates import ERROR_PAGE_TEMPLATE, FALLBACK_PAGE_TEMPLATE, CHROME_INTENT_TEMPLATE, CHROME_OPEN_TEMPLATE, AUTO_COPY_TEMPLATE, ULTIMATE_TEMPLATE, LINKEDIN_TEMPLATE, CHROME_ESCAPE_TEMPLATE
 from app.utils import (
     build_wa_me_url,
     get_device_type,
@@ -528,73 +528,6 @@ async def linkedin_redirect(
 
     # Direct redirect - LinkedIn blocks, user taps Retry, Chrome opens, WhatsApp works
     return RedirectResponse(url=wa_url, status_code=302)
-
-
-# =============================================================================
-# Meta-Refresh Route (Generic Browser Intent)
-# =============================================================================
-
-
-@router.get("/m", tags=["Redirect"])
-async def meta_refresh_redirect(
-    request: Request,
-    phone: str = Query(..., min_length=10, max_length=15),
-    text: Optional[str] = Query(None, max_length=1000),
-    src: Optional[str] = Query(None, max_length=50),
-    campaign: Optional[str] = Query(None, max_length=100),
-    ad_id: Optional[str] = Query(None, max_length=100),
-):
-    """
-    Meta-refresh route using generic browser intent.
-
-    Uses intent:// with scheme=https and action=android.intent.action.VIEW
-    WITHOUT specifying a package. This asks Android to open the URL in
-    the default browser, potentially bypassing WebView restrictions.
-
-    On non-Android, redirects directly to wa.me.
-    """
-    import re
-    from urllib.parse import quote
-
-    user_agent = request.headers.get("user-agent", "")
-
-    # Validate phone
-    is_valid, error_msg = validate_phone(phone)
-    if not is_valid:
-        html = ERROR_PAGE_TEMPLATE.format(
-            error_message="Invalid phone number.",
-            error_code="INVALID_PHONE",
-        )
-        return HTMLResponse(content=html, status_code=400)
-
-    # Build URLs
-    clean_phone = re.sub(r"\D", "", phone)
-    wa_url = build_wa_me_url(phone, text)
-    text_encoded = quote(text or "", safe="")
-
-    # Log
-    logger.info(
-        "Meta-refresh redirect request",
-        extra={
-            "phone": clean_phone[:4] + "****" if len(clean_phone) > 4 else "****",
-            "src": src,
-            "campaign": campaign,
-            "route": "/m",
-        },
-    )
-
-    # Non-Android: direct redirect
-    if not is_android(user_agent):
-        return RedirectResponse(url=wa_url, status_code=302)
-
-    # Android: show meta-refresh page with generic browser intent
-    html = META_REFRESH_TEMPLATE.format(
-        wa_host="wa.me",
-        phone=clean_phone,
-        text_encoded=text_encoded,
-        wa_url=wa_url,
-    )
-    return HTMLResponse(content=html, status_code=200)
 
 
 # =============================================================================
