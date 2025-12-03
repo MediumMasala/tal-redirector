@@ -496,10 +496,11 @@ async def linkedin_redirect(
     ad_id: Optional[str] = Query(None, max_length=100),
 ):
     """
-    LinkedIn redirect route - redirects via Branch.io for better deep linking.
+    LinkedIn redirect route - direct redirect to WhatsApp.
 
-    Branch handles the complexity of WebView escaping and deep linking
-    across different platforms.
+    LinkedIn's WebView will block this, showing a "Retry" button.
+    When user taps Retry, LinkedIn opens Chrome where the redirect works.
+    This preserves the full deep link context (phone + message).
     """
     # Validate phone
     is_valid, error_msg = validate_phone(phone)
@@ -510,23 +511,23 @@ async def linkedin_redirect(
         )
         return HTMLResponse(content=html, status_code=400)
 
-    # Branch link for WhatsApp
-    branch_url = "https://grape-vine.app.link/4YsevJMtNYb?%243p=a_custom_1255785288587616203"
+    # Build WhatsApp URL
+    wa_url = build_wa_me_url(phone, text)
 
     # Log
     logger.info(
-        "LinkedIn redirect via Branch",
+        "LinkedIn redirect - direct to WhatsApp (Retry flow)",
         extra={
             "phone": phone[:4] + "****" if len(phone) > 4 else "****",
             "src": src,
             "campaign": campaign,
             "route": "/l",
-            "redirect_to": "branch",
+            "redirect_to": "wa.me",
         },
     )
 
-    # Redirect to Branch - let Branch handle the deep linking
-    return RedirectResponse(url=branch_url, status_code=302)
+    # Direct redirect - LinkedIn blocks, user taps Retry, Chrome opens, WhatsApp works
+    return RedirectResponse(url=wa_url, status_code=302)
 
 
 # =============================================================================
