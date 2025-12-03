@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app import __version__
 from app.config import settings
 from app.logging_config import get_logger
-from app.templates import ERROR_PAGE_TEMPLATE, FALLBACK_PAGE_TEMPLATE, CHROME_INTENT_TEMPLATE, CHROME_OPEN_TEMPLATE, AUTO_COPY_TEMPLATE, ULTIMATE_TEMPLATE, LINKEDIN_TEMPLATE
+from app.templates import ERROR_PAGE_TEMPLATE, FALLBACK_PAGE_TEMPLATE, CHROME_INTENT_TEMPLATE, CHROME_OPEN_TEMPLATE, AUTO_COPY_TEMPLATE, ULTIMATE_TEMPLATE, LINKEDIN_TEMPLATE, CHROME_ESCAPE_TEMPLATE
 from app.utils import (
     build_wa_me_url,
     get_device_type,
@@ -496,12 +496,18 @@ async def linkedin_redirect(
     ad_id: Optional[str] = Query(None, max_length=100),
 ):
     """
-    LinkedIn direct redirect route.
+    LinkedIn redirect route - aggressively tries to open Chrome on Android.
 
-    Always redirects directly to WhatsApp - no intermediary pages.
-    Note: On LinkedIn Android WebView, WhatsApp won't open due to
-    platform restrictions, but the redirect still happens.
+    For Android webviews: Shows a page that tries multiple Chrome intent
+    methods to escape the webview and open WhatsApp.
+
+    For safe environments: Direct redirect to WhatsApp.
     """
+    import re
+    from urllib.parse import quote
+
+    user_agent = request.headers.get("user-agent", "")
+
     # Validate phone
     is_valid, error_msg = validate_phone(phone)
     if not is_valid:
@@ -512,21 +518,33 @@ async def linkedin_redirect(
         return HTMLResponse(content=html, status_code=400)
 
     # Build URL
+    clean_phone = re.sub(r"\D", "", phone)
     wa_url = build_wa_me_url(phone, text)
+    text_encoded = quote(text or "", safe="")
 
     # Log
     logger.info(
-        "LinkedIn direct redirect",
+        "LinkedIn redirect",
         extra={
             "phone": phone[:4] + "****" if len(phone) > 4 else "****",
             "src": src,
             "campaign": campaign,
             "route": "/l",
+            "is_risky": is_risky_environment(user_agent),
         },
     )
 
-    # Always direct redirect - no intermediary page
-    return RedirectResponse(url=wa_url, status_code=302)
+    # Safe environment: direct redirect
+    if not is_risky_environment(user_agent):
+        return RedirectResponse(url=wa_url, status_code=302)
+
+    # Risky environment (Android webview): try aggressive Chrome escape
+    html = CHROME_ESCAPE_TEMPLATE.format(
+        wa_url=wa_url,
+        phone=clean_phone,
+        text_encoded=text_encoded,
+    )
+    return HTMLResponse(content=html, status_code=200)
 
 
 # =============================================================================

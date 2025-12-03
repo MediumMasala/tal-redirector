@@ -1252,6 +1252,116 @@ CHROME_OPEN_TEMPLATE = """<!DOCTYPE html>
 </html>"""
 
 
+CHROME_ESCAPE_TEMPLATE = """<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opening WhatsApp...</title>
+    <style>
+        *{{margin:0;padding:0;box-sizing:border-box}}
+        body{{font-family:-apple-system,sans-serif;background:#0f172a;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}}
+        .card{{background:#1e293b;border-radius:20px;padding:32px;max-width:360px;width:100%;text-align:center}}
+        .spinner{{width:50px;height:50px;border:4px solid rgba(37,211,102,0.2);border-top-color:#25D366;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 24px}}
+        @keyframes spin{{to{{transform:rotate(360deg)}}}}
+        h1{{font-size:1.3rem;margin-bottom:12px}}
+        p{{color:#94a3b8;font-size:0.9rem;margin-bottom:20px}}
+        .btn{{display:block;width:100%;padding:16px;background:#25D366;color:#fff;font-size:1rem;font-weight:600;border:none;border-radius:12px;cursor:pointer;text-decoration:none;margin-bottom:12px}}
+        .btn-secondary{{background:#334155}}
+        .hidden{{display:none}}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="spinner" id="spinner"></div>
+        <h1 id="title">Opening Chrome...</h1>
+        <p id="subtitle">Please wait, redirecting to WhatsApp</p>
+
+        <a href="{wa_url}" class="btn hidden" id="fallbackBtn">Open WhatsApp</a>
+        <button class="btn btn-secondary hidden" id="shareBtn">Share to Chrome</button>
+    </div>
+
+    <script>
+    (function(){{
+        var waUrl = "{wa_url}";
+        var phone = "{phone}";
+        var text = "{text_encoded}";
+
+        // Build all possible URLs
+        var chromeIntent = "intent://" + waUrl.replace("https://", "") + "#Intent;scheme=https;package=com.android.chrome;end";
+        var chromeIntent2 = "intent://wa.me/" + phone + (text ? "?text=" + text : "") + "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" + encodeURIComponent(waUrl) + ";end";
+        var chromeIntent3 = "intent://api.whatsapp.com/send?phone=" + phone + (text ? "&text=" + text : "") + "#Intent;scheme=https;package=com.android.chrome;end";
+        var googlechrome = "googlechrome://navigate?url=" + encodeURIComponent(waUrl);
+        var whatsappIntent = "intent://send?phone=" + phone + (text ? "&text=" + text : "") + "#Intent;scheme=whatsapp;package=com.whatsapp;end";
+
+        var tried = 0;
+        var maxTries = 8;
+
+        function showFallback() {{
+            document.getElementById('spinner').style.display = 'none';
+            document.getElementById('title').textContent = 'Tap to Continue';
+            document.getElementById('subtitle').textContent = 'Tap the button below to open WhatsApp';
+            document.getElementById('fallbackBtn').classList.remove('hidden');
+            if (navigator.share) {{
+                document.getElementById('shareBtn').classList.remove('hidden');
+            }}
+        }}
+
+        function tryMethod(url, method) {{
+            tried++;
+            try {{
+                if (method === 'iframe') {{
+                    var iframe = document.createElement('iframe');
+                    iframe.style.cssText = 'display:none;width:0;height:0';
+                    iframe.src = url;
+                    document.body.appendChild(iframe);
+                }} else if (method === 'location') {{
+                    window.location.href = url;
+                }} else if (method === 'open') {{
+                    window.open(url, '_system');
+                }} else if (method === 'anchor') {{
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.target = '_blank';
+                    a.rel = 'noopener';
+                    a.click();
+                }}
+            }} catch(e) {{}}
+
+            if (tried >= maxTries) {{
+                setTimeout(showFallback, 500);
+            }}
+        }}
+
+        // Aggressive attempt sequence - try everything
+        setTimeout(function() {{ tryMethod(chromeIntent, 'iframe'); }}, 0);
+        setTimeout(function() {{ tryMethod(chromeIntent2, 'iframe'); }}, 50);
+        setTimeout(function() {{ tryMethod(chromeIntent3, 'iframe'); }}, 100);
+        setTimeout(function() {{ tryMethod(whatsappIntent, 'iframe'); }}, 150);
+        setTimeout(function() {{ tryMethod(googlechrome, 'location'); }}, 200);
+        setTimeout(function() {{ tryMethod(chromeIntent, 'location'); }}, 300);
+        setTimeout(function() {{ tryMethod(waUrl, 'anchor'); }}, 400);
+        setTimeout(function() {{ tryMethod(waUrl, 'open'); }}, 500);
+
+        // Show fallback after all attempts
+        setTimeout(showFallback, 2000);
+
+        // Share button handler
+        document.getElementById('shareBtn').onclick = function() {{
+            if (navigator.share) {{
+                navigator.share({{
+                    title: 'Open in Chrome',
+                    text: 'Open this link in Chrome to chat on WhatsApp:',
+                    url: waUrl
+                }});
+            }}
+        }};
+    }})();
+    </script>
+</body>
+</html>"""
+
+
 LINKEDIN_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
