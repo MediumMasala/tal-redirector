@@ -531,6 +531,55 @@ async def linkedin_redirect(
 
 
 # =============================================================================
+# Play Store Test Route
+# =============================================================================
+
+
+@router.get("/p", tags=["Redirect"])
+async def playstore_redirect(
+    request: Request,
+    phone: str = Query(..., min_length=10, max_length=15),
+    text: Optional[str] = Query(None, max_length=1000),
+    src: Optional[str] = Query(None, max_length=50),
+):
+    """
+    Play Store redirect test.
+
+    Tests if LinkedIn WebView allows Play Store links through.
+    Redirects to WhatsApp's Play Store page.
+
+    NOTE: Deep link context (phone/message) is LOST with this approach.
+    This is just to verify if Play Store is whitelisted.
+    """
+    import re
+
+    # Validate phone (still validate even though we won't use it for Play Store)
+    is_valid, error_msg = validate_phone(phone)
+    if not is_valid:
+        html = ERROR_PAGE_TEMPLATE.format(
+            error_message="Invalid phone number.",
+            error_code="INVALID_PHONE",
+        )
+        return HTMLResponse(content=html, status_code=400)
+
+    clean_phone = re.sub(r"\D", "", phone)
+
+    # Log
+    logger.info(
+        "Play Store redirect test",
+        extra={
+            "phone": clean_phone[:4] + "****" if len(clean_phone) > 4 else "****",
+            "src": src,
+            "route": "/p",
+        },
+    )
+
+    # Redirect to WhatsApp's Play Store page
+    playstore_url = "https://play.google.com/store/apps/details?id=com.whatsapp"
+    return RedirectResponse(url=playstore_url, status_code=302)
+
+
+# =============================================================================
 # Meta-Refresh Route (Generic Browser Intent)
 # =============================================================================
 
