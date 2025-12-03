@@ -173,42 +173,12 @@ async def whatsapp_redirect(
 
     logger.info("Redirect request received", extra=log_extra)
 
-    # Clean phone number for template
-    import re
-    clean_phone = re.sub(r"\D", "", phone)
-
-    # Debug mode: always show fallback page
-    if debug == 1:
-        logger.info(
-            "Debug mode enabled - showing fallback page",
-            extra={"request_id": request_id},
-        )
-        html = FALLBACK_PAGE_TEMPLATE.format(
-            wa_url=wa_url,
-            phone=clean_phone,
-            text=text or "",
-        )
-        return HTMLResponse(content=html, status_code=200)
-
-    # Safe environment: direct redirect
-    if not is_risky:
-        logger.info(
-            "Safe environment - direct redirect",
-            extra={"request_id": request_id, "env_type": env_type},
-        )
-        return RedirectResponse(url=wa_url, status_code=302)
-
-    # Risky environment: show fallback page
+    # Always direct redirect - no intermediary pages
     logger.info(
-        "Risky environment - showing fallback page",
+        "Direct redirect",
         extra={"request_id": request_id, "env_type": env_type},
     )
-    html = FALLBACK_PAGE_TEMPLATE.format(
-        wa_url=wa_url,
-        phone=clean_phone,
-        text=text or "",
-    )
-    return HTMLResponse(content=html, status_code=200)
+    return RedirectResponse(url=wa_url, status_code=302)
 
 
 # =============================================================================
@@ -526,16 +496,12 @@ async def linkedin_redirect(
     ad_id: Optional[str] = Query(None, max_length=100),
 ):
     """
-    LinkedIn-optimized route.
+    LinkedIn direct redirect route.
 
-    Specifically designed for LinkedIn Android webview users.
-    Shows clear instructions to open in browser since LinkedIn's
-    webview blocks all external app launches.
-
-    On safe environments (iOS, desktop, non-webview), redirects directly.
+    Always redirects directly to WhatsApp - no intermediary pages.
+    Note: On LinkedIn Android WebView, WhatsApp won't open due to
+    platform restrictions, but the redirect still happens.
     """
-    user_agent = request.headers.get("user-agent", "")
-
     # Validate phone
     is_valid, error_msg = validate_phone(phone)
     if not is_valid:
@@ -550,7 +516,7 @@ async def linkedin_redirect(
 
     # Log
     logger.info(
-        "LinkedIn redirect request",
+        "LinkedIn direct redirect",
         extra={
             "phone": phone[:4] + "****" if len(phone) > 4 else "****",
             "src": src,
@@ -559,13 +525,8 @@ async def linkedin_redirect(
         },
     )
 
-    # Safe environment: direct redirect
-    if not is_risky_environment(user_agent):
-        return RedirectResponse(url=wa_url, status_code=302)
-
-    # Risky environment (LinkedIn Android): show optimized page
-    html = LINKEDIN_TEMPLATE.format(wa_url=wa_url)
-    return HTMLResponse(content=html, status_code=200)
+    # Always direct redirect - no intermediary page
+    return RedirectResponse(url=wa_url, status_code=302)
 
 
 # =============================================================================
