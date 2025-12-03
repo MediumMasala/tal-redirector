@@ -496,18 +496,12 @@ async def linkedin_redirect(
     ad_id: Optional[str] = Query(None, max_length=100),
 ):
     """
-    LinkedIn redirect route - aggressively tries to open Chrome on Android.
+    LinkedIn redirect route - direct 302 redirect to WhatsApp.
 
-    For Android webviews: Shows a page that tries multiple Chrome intent
-    methods to escape the webview and open WhatsApp.
-
-    For safe environments: Direct redirect to WhatsApp.
+    Always redirects to wa.me. On LinkedIn Android WebView, this will fail
+    and LinkedIn's native "Retry" button will open Chrome, which then
+    successfully opens WhatsApp.
     """
-    import re
-    from urllib.parse import quote
-
-    user_agent = request.headers.get("user-agent", "")
-
     # Validate phone
     is_valid, error_msg = validate_phone(phone)
     if not is_valid:
@@ -518,9 +512,7 @@ async def linkedin_redirect(
         return HTMLResponse(content=html, status_code=400)
 
     # Build URL
-    clean_phone = re.sub(r"\D", "", phone)
     wa_url = build_wa_me_url(phone, text)
-    text_encoded = quote(text or "", safe="")
 
     # Log
     logger.info(
@@ -530,21 +522,11 @@ async def linkedin_redirect(
             "src": src,
             "campaign": campaign,
             "route": "/l",
-            "is_risky": is_risky_environment(user_agent),
         },
     )
 
-    # Safe environment: direct redirect
-    if not is_risky_environment(user_agent):
-        return RedirectResponse(url=wa_url, status_code=302)
-
-    # Risky environment (Android webview): try aggressive Chrome escape
-    html = CHROME_ESCAPE_TEMPLATE.format(
-        wa_url=wa_url,
-        phone=clean_phone,
-        text_encoded=text_encoded,
-    )
-    return HTMLResponse(content=html, status_code=200)
+    # Always direct 302 redirect - let LinkedIn's retry mechanism handle it
+    return RedirectResponse(url=wa_url, status_code=302)
 
 
 # =============================================================================
