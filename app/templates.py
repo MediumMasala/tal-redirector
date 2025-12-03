@@ -1650,6 +1650,69 @@ LINKEDIN_TEMPLATE = """<!DOCTYPE html>
 </html>"""
 
 
+META_REFRESH_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="0; url=intent://{wa_host}/{phone}?text={text_encoded}#Intent;scheme=https;action=android.intent.action.VIEW;end;">
+    <title>Opening WhatsApp...</title>
+    <style>
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }}
+        .card {{
+            background: #16213e;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 400px;
+            text-align: center;
+        }}
+        h1 {{ margin-bottom: 16px; font-size: 1.3rem; }}
+        p {{ color: #9ca3af; line-height: 1.6; margin-bottom: 20px; }}
+        .btn {{
+            display: inline-block;
+            background: #25D366;
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+        }}
+        .fallback {{ margin-top: 20px; font-size: 0.85rem; color: #6b7280; }}
+        .fallback a {{ color: #60a5fa; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Opening WhatsApp...</h1>
+        <p>If nothing happens, tap the button below:</p>
+        <a href="{wa_url}" class="btn">Open WhatsApp</a>
+        <p class="fallback">Or <a href="{wa_url}">click here</a> to open manually</p>
+    </div>
+    <script>
+        // Backup: try JavaScript redirect after 500ms
+        setTimeout(function() {{
+            window.location.href = "intent://{wa_host}/{phone}?text={text_encoded}#Intent;scheme=https;action=android.intent.action.VIEW;end;";
+        }}, 500);
+        // Final fallback after 2s
+        setTimeout(function() {{
+            window.location.href = "{wa_url}";
+        }}, 2000);
+    </script>
+</body>
+</html>"""
+
+
 ERROR_PAGE_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
