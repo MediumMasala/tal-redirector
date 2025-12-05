@@ -496,12 +496,17 @@ async def linkedin_redirect(
     ad_id: Optional[str] = Query(None, max_length=100),
 ):
     """
-    LinkedIn redirect route - direct redirect to WhatsApp.
+    LinkedIn redirect route - Chrome Intent for Android.
 
-    LinkedIn's WebView will block this, showing a "Retry" button.
-    When user taps Retry, LinkedIn opens Chrome where the redirect works.
-    This preserves the full deep link context (phone + message).
+    For Android: Shows Chrome Intent page that tries to open Chrome browser,
+    which can then properly handle WhatsApp links.
+
+    For non-Android: Direct redirect to wa.me.
     """
+    import re
+
+    user_agent = request.headers.get("user-agent", "")
+
     # Validate phone
     is_valid, error_msg = validate_phone(phone)
     if not is_valid:
@@ -513,21 +518,31 @@ async def linkedin_redirect(
 
     # Build WhatsApp URL
     wa_url = build_wa_me_url(phone, text)
+    clean_phone = re.sub(r"\D", "", phone)
 
     # Log
     logger.info(
-        "LinkedIn redirect - direct to WhatsApp (Retry flow)",
+        "LinkedIn redirect - Chrome Intent",
         extra={
             "phone": phone[:4] + "****" if len(phone) > 4 else "****",
             "src": src,
             "campaign": campaign,
             "route": "/l",
-            "redirect_to": "wa.me",
+            "is_android": is_android(user_agent),
         },
     )
 
-    # Direct redirect - LinkedIn blocks, user taps Retry, Chrome opens, WhatsApp works
-    return RedirectResponse(url=wa_url, status_code=302)
+    # Non-Android: direct redirect
+    if not is_android(user_agent):
+        return RedirectResponse(url=wa_url, status_code=302)
+
+    # Android: show Chrome Intent page
+    html = CHROME_INTENT_TEMPLATE.format(
+        wa_url=wa_url,
+        phone=clean_phone,
+        text=text or "",
+    )
+    return HTMLResponse(content=html, status_code=200)
 
 
 # =============================================================================
